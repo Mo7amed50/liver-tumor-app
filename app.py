@@ -71,7 +71,8 @@ get_custom_objects().update({
     'focal_loss_fixed': focal_loss(gamma=2., alpha=0.25)
 })
 
-
+import tensorflow as tf
+tf.keras.models.save_model(model, 'compressed_model.keras', save_format='tf')
 # Load model
 MODEL_PATH = r'liver_tumor_classifier.keras'  # Update path if needed
 METADATA_PATH = r'D:\liver-tumor-app\model_metadata (2).pkl'  # Update path if needed
