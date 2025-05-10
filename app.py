@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 import cv2
-from PIL import Image   
+from PIL import Image
 import pickle
 from typing import Tuple, Dict, List, Optional
 from tensorflow.keras.models import load_model
@@ -13,8 +13,8 @@ from fpdf import FPDF
 from datetime import datetime
 import os
 import tempfile
-import pandas as pd 
-
+import pandas as pd
+import gc
 
 # -----------------------------
 # Step 1: Define Custom Objects
@@ -71,22 +71,40 @@ get_custom_objects().update({
     'focal_loss_fixed': focal_loss(gamma=2., alpha=0.25)
 })
 
-import tensorflow as tf
-tf.keras.models.save_model(model, 'compressed_model.keras', save_format='tf')
-# Load model
-MODEL_PATH = r'liver_tumor_classifier.keras'  # Update path if needed
-METADATA_PATH = r'D:\liver-tumor-app\model_metadata (2).pkl'  # Update path if needed
+# -----------------------------
+# Step 2: Optimized Model Loading
+# -----------------------------
 
-model = load_model(MODEL_PATH, compile=False)
-model.compile(optimizer='adam',
-              loss=focal_loss(gamma=2., alpha=0.25),
-              metrics=['accuracy'])
+@st.cache_resource
+def load_cached_model():
+    gc.collect()  # Free up memory
+    try:
+        model = load_model('liver_tumor_classifier.keras', 
+                          custom_objects=get_custom_objects(), 
+                          compile=False)
+        model.compile(optimizer='adam',
+                     loss=focal_loss(gamma=2., alpha=0.25),
+                     metrics=['accuracy'])
+        return model
+    except Exception as e:
+        st.error(f"Model loading failed: {str(e)}")
+        return None
 
-with open(METADATA_PATH, 'rb') as f:
-    metadata = pickle.load(f)
-thresholds = metadata.get('thresholds', {0: 0.36178, 1: 0.48146927, 2: 0.5123631})
-class_names = ['Normal Liver', 'Hemangioma Liver Tumor', 'Hepatocellular Carcinoma']
+model = load_cached_model()
 
+# -----------------------------
+# Step 3: Load Metadata
+# -----------------------------
+
+try:
+    with open('model_metadata (2).pkl', 'rb') as f:
+        metadata = pickle.load(f)
+    thresholds = metadata.get('thresholds', {0: 0.36178, 1: 0.48146927, 2: 0.5123631})
+    class_names = ['Normal Liver', 'Hemangioma Liver Tumor', 'Hepatocellular Carcinoma']
+except Exception as e:
+    st.error(f"Metadata loading failed: {str(e)}")
+    thresholds = {0: 0.36178, 1: 0.48146927, 2: 0.5123631}
+    class_names = ['Normal Liver', 'Hemangioma Liver Tumor', 'Hepatocellular Carcinoma']
 
 # -----------------------------
 # Step 2: Image Preprocessing
