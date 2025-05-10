@@ -1,7 +1,8 @@
 streamlit==1.29.0
-numpy==1.24.4
-opencv-python==4.8.1.78
+numpy==1.23.5
+opencv-python-headless==4.8.1.78
 pillow==10.1.0
-tensorflow==2.13.0
+tensorflow-cpu==2.13.0
 fpdf2==2.7.5
 pandas==2.0.3
+protobuf==3.20.3  # Add this to prevent protobuf conflicts
